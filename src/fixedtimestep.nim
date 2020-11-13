@@ -1,38 +1,33 @@
-import std/monotimes
 import std/times
+import std/monotimes
 
-template runGameWhile*(
-  condition: bool,
-  updateFrequency: float32,
-  body: untyped): untyped =
+type
+  FixedTimestep* = object
+    interpolation*: float32
+    displayDelta*: float32
+    physicsDelta*: float32
+    accumulator: float32
+    currentTime: MonoTime
+    previousTime: MonoTime
 
-  block:
-    var
-      startTime = getMonoTime()
-      previousTime = getMonoTime()
-      lag: float32 = 0.0
+func initFixedTimestep*(physicsFps: float32): FixedTimestep =
+  result.interpolation = 0.0
+  result.displayDelta = 0.0
+  result.physicsDelta = 1.0 / physicsFps
+  result.accumulator = 0.0
+  result.currentTime = getMonoTime()
+  result.previousTime = getMonoTime()
 
-    while condition:
-      let
-        currentTime = getMonoTime()
-        delta {.inject.} = float32(inMilliseconds(currentTime - previousTime).float64 * 0.001)
+template update*(self: var FixedTimestep, updateStatement: typed) =
+  self.currentTime = getMonoTime()
 
-      previousTime = currentTime
-      lag += delta
+  self.displayDelta = (inMilliseconds(self.currentTime - self.previousTime).float64 * 0.001).float32
+  self.accumulator += self.displayDelta
 
-      let
-        time {.inject.} = inMilliseconds(currentTime - startTime).float64 * 0.001
-        secondsPerUpdate {.inject.} = 1'f32 / updateFrequency
+  while self.accumulator >= self.physicsDelta:
+    updateStatement
+    self.accumulator -= self.physicsDelta
 
-      template update(updateBody: untyped): untyped {.inject.} =
-        block:
-          while lag >= secondsPerUpdate:
-            updateBody
-            lag -= secondsPerUpdate
+  self.interpolation = self.accumulator / self.physicsDelta
 
-      template draw(stepName, drawBody: untyped): untyped {.inject.} =
-        block:
-          let stepName {.inject.} = lag / secondsPerUpdate
-          drawBody
-
-      body
+  self.previousTime = self.currentTime

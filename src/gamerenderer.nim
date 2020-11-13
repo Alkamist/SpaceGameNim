@@ -7,10 +7,10 @@ type
     game*: Game
     previousGameState*: Game
     displayFps*: float32
-    physicsFps*: float32
     windowTitle*: cstring
     windowWidth*: int32
     windowHeight*: int32
+    fixedTimestep*: FixedTimestep
 
 func initGameRenderer*(
   windowTitle: cstring,
@@ -22,10 +22,10 @@ func initGameRenderer*(
   result.game = initGame()
   result.previousGameState = initGame()
   result.displayFps = displayFps
-  result.physicsFps = physicsFps
   result.windowTitle = windowTitle
   result.windowWidth = windowWidth
   result.windowHeight = windowHeight
+  result.fixedTimestep = initFixedTimestep(physicsFps)
 
 proc render3D(self: var GameRenderer, interpolation: float32) =
   var interpolatedCubePosition = self.previousGameState.cubePosition.lerp(
@@ -51,18 +51,17 @@ proc run*(self: var GameRenderer) =
 
   SetCameraMode(camera, CAMERA_FIRST_PERSON)
 
-  runGameWhile(not WindowShouldClose(), self.physicsFps):
-    update:
+  while not WindowShouldClose():
+    self.fixedTimestep.update:
       self.previousGameState = self.game
-      self.game.update(1.0 / self.physicsFps)
+      self.game.update(self.fixedTimestep.physicsDelta)
 
-    draw(interpolation):
-      BeginDrawing()
-      ClearBackground(BLACK)
-      BeginMode3D(camera)
-      self.render3D(interpolation)
-      EndMode3D()
-      self.render2D(interpolation)
-      EndDrawing()
+    BeginDrawing()
+    ClearBackground(BLACK)
+    BeginMode3D(camera)
+    self.render3D(self.fixedTimestep.interpolation)
+    EndMode3D()
+    self.render2D(self.fixedTimestep.interpolation)
+    EndDrawing()
 
   CloseWindow()
