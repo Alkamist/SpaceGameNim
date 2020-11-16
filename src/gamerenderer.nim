@@ -1,15 +1,16 @@
 import fixedtimestep
 import gameengine
-import game
+import gamestate
 
 type
   GameRenderer* = object
-    game*: Game
-    previousGameState*: Game
+    gameState*: GameState
+    previousGameState*: GameState
     displayFps*: float32
     windowTitle*: cstring
     windowWidth*: int32
     windowHeight*: int32
+    zoom: float32
     fixedTimestep*: FixedTimestep
 
 func initGameRenderer*(
@@ -19,49 +20,55 @@ func initGameRenderer*(
   displayFps: float32,
   physicsFps: float32): GameRenderer =
 
-  result.game = initGame()
-  result.previousGameState = initGame()
+  result.gameState = GameState()
+  result.previousGameState = GameState()
   result.displayFps = displayFps
   result.windowTitle = windowTitle
   result.windowWidth = windowWidth
   result.windowHeight = windowHeight
+  result.zoom = 64.0
   result.fixedTimestep = initFixedTimestep(physicsFps)
 
-proc render3D(self: var GameRenderer, interpolation: float32) =
-  var interpolatedCubePosition = self.previousGameState.cubePosition.lerp(
-    self.game.cubePosition,
-    interpolation,
+func drawPlayer(self: GameRenderer, player: Player) =
+  let
+    width = 40
+    height = 80
+    playerX = self.gameState.player.x
+    playerY = -self.gameState.player.y
+  DrawRectangle(
+    int32(self.windowWidth.float32 * 0.5 + playerX * self.zoom) - int32(width.float32 * 0.5),
+    int32(self.windowHeight.float32 * 0.5 + playerY * self.zoom) - height,
+    width, height, MAROON
   )
-  DrawCube(interpolatedCubePosition, 1.0, 1.0, 1.0, RAYWHITE)
 
-proc render2D(self: var GameRenderer, interpolation: float32) =
+proc updateGameState(self: var GameRenderer) =
+  self.previousGameState = self.gameState
+
+  let inputs = PlayerInputs(
+    left: IsKeyDown(KEY_A),
+    right: IsKeyDown(KEY_D),
+    down: IsKeyDown(KEY_S),
+    up: IsKeyDown(KEY_W),
+    jump: IsKeyDown(KEY_SPACE),
+  )
+
+  self.gameState.update(inputs, self.fixedTimestep.physicsDelta)
+
+func render(self: GameRenderer) =
+  ClearBackground(BLACK)
+  self.drawPlayer(self.gameState.player)
   DrawFPS(10, 10)
 
 proc run*(self: var GameRenderer) =
   InitWindow(self.windowWidth, self.windowHeight, self.windowTitle)
   SetTargetFPS(self.displayFps.int32)
 
-  var camera = Camera(
-    position: Vector3(x: 0.0, y: 15.0, z: 0.0),
-    target: Vector3(x: 0.0, y: 0.0, z: 0.0),
-    up: Vector3(x: 0.0, y: 0.0, z: 1.0),
-    fovy: 45.0,
-    typex: CAMERA_PERSPECTIVE,
-  )
-
-  SetCameraMode(camera, CAMERA_FIRST_PERSON)
-
   while not WindowShouldClose():
     self.fixedTimestep.update:
-      self.previousGameState = self.game
-      self.game.update(self.fixedTimestep.physicsDelta)
+      self.updateGameState()
 
     BeginDrawing()
-    ClearBackground(BLACK)
-    BeginMode3D(camera)
-    self.render3D(self.fixedTimestep.interpolation)
-    EndMode3D()
-    self.render2D(self.fixedTimestep.interpolation)
+    self.render()
     EndDrawing()
 
   CloseWindow()
