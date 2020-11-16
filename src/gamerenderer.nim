@@ -29,17 +29,19 @@ func initGameRenderer*(
   result.zoom = 64.0
   result.fixedTimestep = initFixedTimestep(physicsFps)
 
-func drawPlayer(self: GameRenderer, player: Player) =
+func drawPlayer(self: GameRenderer) =
   let
     width = 40
     height = 80
-    playerX = self.gameState.player.x
-    playerY = -self.gameState.player.y
-  DrawRectangle(
-    int32(self.windowWidth.float32 * 0.5 + playerX * self.zoom) - int32(width.float32 * 0.5),
-    int32(self.windowHeight.float32 * 0.5 + playerY * self.zoom) - height,
-    width, height, MAROON
-  )
+    previousPosition = vec2(self.previousGameState.player.x, self.previousGameState.player.y)
+    position = vec2(self.gameState.player.x, self.gameState.player.y)
+    interpolatedPosition = previousPosition.lerp(position, self.fixedTimestep.interpolation)
+    playerX = interpolatedPosition.x
+    playerY = interpolatedPosition.y
+    screenX = int32(self.windowWidth.float32 * 0.5 + playerX * self.zoom) - int32(width.float32 * 0.5)
+    screenY = int32(self.windowHeight.float32 * 0.5 - playerY * self.zoom) - height
+
+  DrawRectangle(screenX, screenY, width, height, MAROON)
 
 proc updateGameState(self: var GameRenderer) =
   self.previousGameState = self.gameState
@@ -56,7 +58,7 @@ proc updateGameState(self: var GameRenderer) =
 
 func render(self: GameRenderer) =
   ClearBackground(BLACK)
-  self.drawPlayer(self.gameState.player)
+  self.drawPlayer()
   DrawFPS(10, 10)
 
 proc run*(self: var GameRenderer) =

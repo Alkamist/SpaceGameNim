@@ -4,7 +4,6 @@ type
     previousValue*: float32
     deadZone*: float32
     wasActive*: bool
-    framesActive*: uint32
     highStateWasFirst: bool
 
 func initAnalogAxis*(deadZone: float32): AnalogAxis =
@@ -12,7 +11,6 @@ func initAnalogAxis*(deadZone: float32): AnalogAxis =
   result.previousValue = 0.0
   result.deadZone = 0.2875
   result.wasActive = false
-  result.framesActive = 0
   result.highStateWasFirst = true
 
 func direction*(self: AnalogAxis): float32 =
@@ -52,12 +50,5 @@ proc setValueFromStates*(self: var AnalogAxis, lowState: bool, highState: bool) 
       self.value = 0.0
 
 proc update*(self: var AnalogAxis) =
-  if self.justActivated:
-      self.framesActive = 0
-  elif self.isActive:
-      self.framesActive += 1
-  else:
-      self.framesActive = 0
-
   self.previousValue = self.value
   self.wasActive = self.isActive
