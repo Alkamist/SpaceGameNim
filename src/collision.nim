@@ -9,9 +9,6 @@ type
     rotation*: float32
     isOverlapped*: bool
 
-  CollisionGroup* = object
-    colliders*: seq[CollisionPolygon]
-
 func pentagon*(): CollisionPolygon =
   let theta = PI * 2.0 / 5.0
   for i in 0..<5:
@@ -72,19 +69,18 @@ func overlaps*(self: CollisionPolygon, other: CollisionPolygon): bool =
   if not other.overlapTest(self): return false
   true
 
+type
+  CollisionGroup* = object
+    colliders*: seq[CollisionPolygon]
 
+proc update*(self: var CollisionGroup) =
+  let numColliders = self.colliders.len
 
+  for i in 0..<numColliders:
+    self.colliders[i].isOverlapped = false
 
-
-
-#func overlaps*(self: CollisionPolygon, other: CollisionPolygon): bool =
-#  let numPoints = self.worldPoints.len
-#  if numPoints > 2:
-#    for i in 0..<numPoints:
-#      let
-#        pointA = polygon.worldPoints[i]
-#        pointB = polygon.worldPoints[(i + 1) mod numPoints]
-#        axisProjection = Vec2(
-#          x: pointA.y - pointB.y,
-#          y: pointB.x - pointA.x,
-#        )
+  for i in 0..<numColliders:
+    for j in i + 1..<numColliders:
+      let overlapOccurs = self.colliders[i].overlaps(self.colliders[j])
+      self.colliders[i].isOverlapped = self.colliders[i].isOverlapped or overlapOccurs
+      self.colliders[j].isOverlapped = self.colliders[j].isOverlapped or overlapOccurs

@@ -18,6 +18,11 @@ func initGameState*(): GameState =
   result.collisionGroup.colliders.add(pentagon())
   result.collisionGroup.colliders.add(pentagon())
 
+  var test = pentagon()
+  test.position.x = 2.0
+  test.updateWorldPoints()
+  result.collisionGroup.colliders.add(test)
+
 proc update*(self: var GameState, inputs: PlayerInputs, delta: float32) =
   self.controls.update()
   self.controls.applyInputs(inputs)
@@ -28,5 +33,4 @@ proc update*(self: var GameState, inputs: PlayerInputs, delta: float32) =
   shape.rotation += delta
   shape.updateWorldPoints()
 
-  shape.isOverlapped = shape.overlaps(self.collisionGroup.colliders[1])
-  self.collisionGroup.colliders[1].isOverlapped = self.collisionGroup.colliders[1].overlaps(shape)
+  self.collisionGroup.update()
