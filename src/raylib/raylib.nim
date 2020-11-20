@@ -73,7 +73,6 @@ const LEXT* = when defined(windows):".dll"
 elif defined(macosx):               ".dylib"
 else:                               ".so"
 {.pragma: RLAPI, cdecl, discardable, dynlib: "libraylib" & LEXT.}
-#{.pragma: RLAPI, cdecl, discardable, dynlib: "libraylib" & LEXT.}
 # ----------------------------------------------------------------------------------
 # Some basic Defines
 # ----------------------------------------------------------------------------------

@@ -1,8 +1,7 @@
 import raylib/raylib
 export raylib
 
-import vmath/vmath
-export vmath
+import vmath
 
 {.push inline.}
 
