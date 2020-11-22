@@ -12,16 +12,16 @@ type
     controls*: PlayerControls
     collisionGroup*: CollisionGroup
 
-func initGameState*(): GameState =
+proc initGameState*(): GameState =
   #result.player = Player()
   result.collisionGroup = CollisionGroup()
-  result.collisionGroup.colliders.add(pentagon())
-  result.collisionGroup.colliders.add(pentagon())
-
-  var test = pentagon()
-  test.position.x = 2.0
-  test.updateWorldPoints()
-  result.collisionGroup.colliders.add(test)
+  var colliders {.byaddr.} = result.collisionGroup.colliders
+  let offset = 1000000.0'f32
+  colliders.add(pentagon(position = Vec2(x: offset, y: 0.0), scale = offset))
+  colliders.add(pentagon(position = Vec2(x: offset, y: 0.0), scale = offset))
+  colliders.add(pentagon(position = Vec2(x: offset - 3.0, y: 0.0), scale = offset))
+  for i in 0..<colliders.len:
+    colliders[i].updateWorldPoints(Vec2(x: offset, y: 0.0), offset)
 
 proc update*(self: var GameState, inputs: PlayerInputs, delta: float32) =
   self.controls.update()
@@ -31,6 +31,6 @@ proc update*(self: var GameState, inputs: PlayerInputs, delta: float32) =
   shape.position.x += 3.0 * self.controls.xAxis.value * delta
   shape.position.y += 3.0 * self.controls.yAxis.value * delta
   shape.rotation += delta
-  shape.updateWorldPoints()
+  shape.updateWorldPoints(Vec2(x: 1000000.0'f32, y: 0.0), 1000000.0'f32)
 
   self.collisionGroup.update()

@@ -1,5 +1,6 @@
 import math
 import vmath
+export vmath
 
 type
   CollisionPolygon* = object
@@ -7,9 +8,32 @@ type
     worldPoints*: seq[Vec2]
     position*: Vec2
     rotation*: float32
+    scale*: float32
     isOverlapped*: bool
 
-func pentagon*(): CollisionPolygon =
+proc numberOfSides*(self: CollisionPolygon): int {.inline.} =
+  self.points.len
+
+proc updateWorldPoints*(self: var CollisionPolygon,
+                        origin = Vec2(x: 0.0, y: 0.0),
+                        originScale = 1.0'f32) =
+  let numPoints = self.numberOfSides
+  for i in 0..<numPoints:
+    let modelPoint = self.points[i]
+    let cosRot = cos(self.rotation)
+    let sinRot = sin(self.rotation)
+    self.worldPoints[i] = Vec2(
+      x: (self.scale / originScale) * (modelPoint.x * cosRot - modelPoint.y * sinRot) + (self.position.x - origin.x),
+      y: (self.scale / originScale) * (modelPoint.x * sinRot + modelPoint.y * cosRot) + (self.position.y - origin.y),
+    )
+
+proc pentagon*(position = Vec2(x: 0.0, y: 0.0),
+               rotation = 0.0'f32,
+               scale = 1.0'f32): CollisionPolygon =
+  result.position = position
+  result.rotation = rotation
+  result.scale = scale
+
   let theta = PI * 2.0 / 5.0
   for i in 0..<5:
     let point = Vec2(
@@ -19,21 +43,9 @@ func pentagon*(): CollisionPolygon =
     result.points.add(point)
     result.worldPoints.add(point)
 
-func numberOfSides*(self: CollisionPolygon): int {.inline.} =
-  self.worldPoints.len
+  result.updateWorldPoints(Vec2(x: 0.0, y: 0.0), 1.0)
 
-proc updateWorldPoints*(self: var CollisionPolygon) =
-  let numPoints = self.numberOfSides
-  for i in 0..<numPoints:
-    let modelPoint = self.points[i]
-    let cosRot = cos(self.rotation)
-    let sinRot = sin(self.rotation)
-    self.worldPoints[i] = Vec2(
-      x: modelPoint.x * cosRot - modelPoint.y * sinRot + self.position.x,
-      y: modelPoint.x * sinRot + modelPoint.y * cosRot + self.position.y,
-    )
-
-func axisExtremes(self: CollisionPolygon, axis: Vec2): (float32, float32) {.inline.} =
+proc axisExtremes(self: CollisionPolygon, axis: Vec2): (float32, float32) {.inline.} =
   var
     minimum = Inf
     maximum = NegInf
@@ -43,7 +55,7 @@ func axisExtremes(self: CollisionPolygon, axis: Vec2): (float32, float32) {.inli
     maximum = max(maximum, axisDot)
   (minimum.float32, maximum.float32)
 
-func overlapTest(self: CollisionPolygon, other: CollisionPolygon): bool {.inline.} =
+proc overlapTest(self: CollisionPolygon, other: CollisionPolygon): bool {.inline.} =
   let numSides = self.numberOfSides
 
   if numSides > 2:
@@ -64,7 +76,7 @@ func overlapTest(self: CollisionPolygon, other: CollisionPolygon): bool {.inline
 
   true
 
-func overlaps*(self: CollisionPolygon, other: CollisionPolygon): bool =
+proc overlaps*(self: CollisionPolygon, other: CollisionPolygon): bool =
   if not self.overlapTest(other): return false
   if not other.overlapTest(self): return false
   true

@@ -11,10 +11,10 @@ type
     windowTitle*: cstring
     windowWidth*: int32
     windowHeight*: int32
-    zoom: float32
+    cameraZoom: float32
     fixedTimestep*: FixedTimestep
 
-func initGameRenderer*(
+proc initGameRenderer*(
   windowTitle: cstring,
   windowWidth: int32,
   windowHeight: int32,
@@ -27,14 +27,14 @@ func initGameRenderer*(
   result.windowTitle = windowTitle
   result.windowWidth = windowWidth
   result.windowHeight = windowHeight
-  result.zoom = 64.0
+  result.cameraZoom = 64.0
   result.fixedTimestep = initFixedTimestep(physicsFps)
 
-func toScreenPosition(self: GameRenderer, position: Vec2): Vec2 =
-  result.x = self.windowWidth.float32 * 0.5 + position.x * self.zoom
-  result.y = self.windowHeight.float32 * 0.5 - position.y * self.zoom
+proc toScreenPosition(self: GameRenderer, position: Vec2): Vec2 =
+  result.x = self.windowWidth.float32 * 0.5 + position.x * self.cameraZoom
+  result.y = self.windowHeight.float32 * 0.5 - position.y * self.cameraZoom
 
-#func drawPlayer(self: GameRenderer) =
+#proc drawPlayer(self: GameRenderer) =
 #  let
 #    width = 40
 #    height = 80
@@ -43,12 +43,12 @@ func toScreenPosition(self: GameRenderer, position: Vec2): Vec2 =
 #    interpolatedPosition = previousPosition.lerp(position, self.fixedTimestep.interpolation)
 #    playerX = interpolatedPosition.x
 #    playerY = interpolatedPosition.y
-#    screenX = int32(self.windowWidth.float32 * 0.5 + playerX * self.zoom) - int32(width.float32 * 0.5)
-#    screenY = int32(self.windowHeight.float32 * 0.5 - playerY * self.zoom) - height
+#    screenX = int32(self.windowWidth.float32 * 0.5 + playerX * self.cameraZoom) - int32(width.float32 * 0.5)
+#    screenY = int32(self.windowHeight.float32 * 0.5 - playerY * self.cameraZoom) - height
 #
 #  DrawRectangle(screenX, screenY, width, height, MAROON)
 
-func drawPolygon(self: GameRenderer, polygon: CollisionPolygon) =
+proc drawPolygon(self: GameRenderer, polygon: CollisionPolygon) =
   let numPoints = polygon.numberOfSides
   if numPoints > 2:
     for i in 0..<numPoints:
@@ -74,7 +74,7 @@ proc updateGameState(self: var GameRenderer) =
 
   self.gameState.update(inputs, self.fixedTimestep.physicsDelta)
 
-func render(self: GameRenderer) =
+proc render(self: GameRenderer) =
   ClearBackground(BLACK)
 
   #self.drawPlayer()
