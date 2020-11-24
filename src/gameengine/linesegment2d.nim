@@ -9,6 +9,10 @@ type
   LineSegment2d* = object
     points*: array[0..1, Vector2d]
 
+func initLineSegment2d*(pointA = initVector2d(0.0, 0.0),
+                        pointB = initVector2d(0.0, 0.0)): LineSegment2d =
+  result.points = [pointA, pointB]
+
 func initLineSegment2d*(x0 = 0'f32,
                         y0 = 0'f32,
                         x1 = 0'f32,
