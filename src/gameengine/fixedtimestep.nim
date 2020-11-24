@@ -1,6 +1,7 @@
 import std/times
 import std/monotimes
 
+
 type
   FixedTimestep* = object
     interpolation*: float32
@@ -18,16 +19,16 @@ func initFixedTimestep*(physicsFps: float32): FixedTimestep =
   result.currentTime = getMonoTime()
   result.previousTime = getMonoTime()
 
-template update*(self: var FixedTimestep, updateStatement: typed) =
-  self.currentTime = getMonoTime()
+template update*(step: var FixedTimestep, updateStatement: typed) =
+  step.currentTime = getMonoTime()
 
-  self.displayDelta = (inMilliseconds(self.currentTime - self.previousTime).float64 * 0.001).float32
-  self.accumulator += self.displayDelta
+  step.displayDelta = (inMilliseconds(step.currentTime - step.previousTime).float64 * 0.001).float32
+  step.accumulator += step.displayDelta
 
-  while self.accumulator >= self.physicsDelta:
+  while step.accumulator >= step.physicsDelta:
     updateStatement
-    self.accumulator -= self.physicsDelta
+    step.accumulator -= step.physicsDelta
 
-  self.interpolation = self.accumulator / self.physicsDelta
+  step.interpolation = step.accumulator / step.physicsDelta
 
-  self.previousTime = self.currentTime
+  step.previousTime = step.currentTime

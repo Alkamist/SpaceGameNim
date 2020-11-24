@@ -1,7 +1,9 @@
-import fixedtimestep
 import raylib
-import vmath
 import gamestate
+import gameengine/fixedtimestep
+import gameengine/vector2d
+import gameengine/collisionBody2d
+
 
 type
   GameRenderer* = object
@@ -14,13 +16,11 @@ type
     cameraZoom: float32
     fixedTimestep*: FixedTimestep
 
-proc initGameRenderer*(
-  windowTitle: cstring,
-  windowWidth: int32,
-  windowHeight: int32,
-  displayFps: float32,
-  physicsFps: float32): GameRenderer =
-
+func initGameRenderer*(windowTitle: cstring,
+                       windowWidth: int32,
+                       windowHeight: int32,
+                       displayFps: float32,
+                       physicsFps: float32): GameRenderer =
   result.gameState = initGameState()
   result.previousGameState = initGameState()
   result.displayFps = displayFps
@@ -30,70 +30,52 @@ proc initGameRenderer*(
   result.cameraZoom = 64.0
   result.fixedTimestep = initFixedTimestep(physicsFps)
 
-proc toScreenPosition(self: GameRenderer, position: Vec2): Vec2 =
-  result.x = self.windowWidth.float32 * 0.5 + position.x * self.cameraZoom
-  result.y = self.windowHeight.float32 * 0.5 - position.y * self.cameraZoom
+func toScreenPosition(renderer: GameRenderer, position: Vector2d): Vector2d =
+  result.x = renderer.windowWidth.float32 * 0.5 + position.x * renderer.cameraZoom
+  result.y = renderer.windowHeight.float32 * 0.5 - position.y * renderer.cameraZoom
 
-#proc drawPlayer(self: GameRenderer) =
-#  let
-#    width = 40
-#    height = 80
-#    previousPosition = vec2(self.previousGameState.player.x, self.previousGameState.player.y)
-#    position = vec2(self.gameState.player.x, self.gameState.player.y)
-#    interpolatedPosition = previousPosition.lerp(position, self.fixedTimestep.interpolation)
-#    playerX = interpolatedPosition.x
-#    playerY = interpolatedPosition.y
-#    screenX = int32(self.windowWidth.float32 * 0.5 + playerX * self.cameraZoom) - int32(width.float32 * 0.5)
-#    screenY = int32(self.windowHeight.float32 * 0.5 - playerY * self.cameraZoom) - height
-#
-#  DrawRectangle(screenX, screenY, width, height, MAROON)
-
-proc drawPolygon(self: GameRenderer, polygon: CollisionPolygon) =
-  let numPoints = polygon.numberOfSides
-  if numPoints > 2:
-    for i in 0..<numPoints:
+func drawCollider(renderer: GameRenderer, body: CollisionBody2d) =
+  let numSides = body.numberOfSides
+  if numSides > 2:
+    for i in 0..<numSides:
       let
-        startPosition = self.toScreenPosition(polygon.worldPoints[i])
-        endPosition = self.toScreenPosition(polygon.worldPoints[(i + 1) mod numPoints])
+        startPosition = renderer.toScreenPosition(body.worldPolygon[i])
+        endPosition = renderer.toScreenPosition(body.worldPolygon[(i + 1) mod numSides])
       DrawLine(startPosition.x.int32,
                startPosition.y.int32,
                endPosition.x.int32,
                endPosition.y.int32,
-               if polygon.isOverlapped: RED else: GREEN)
+               if body.isOverlapped: RED else: GREEN)
 
-proc updateGameState(self: var GameRenderer) =
-  self.previousGameState = self.gameState
+proc updateGameState(renderer: var GameRenderer) =
+  renderer.previousGameState = renderer.gameState
 
-  let inputs = PlayerInputs(
-    left: IsKeyDown(KEY_A),
-    right: IsKeyDown(KEY_D),
-    down: IsKeyDown(KEY_S),
-    up: IsKeyDown(KEY_W),
-    jump: IsKeyDown(KEY_SPACE),
-  )
+  let inputs = GameInputs(left: IsKeyDown(KEY_A),
+                          right: IsKeyDown(KEY_D),
+                          down: IsKeyDown(KEY_S),
+                          up: IsKeyDown(KEY_W),
+                          jump: IsKeyDown(KEY_SPACE))
 
-  self.gameState.update(inputs, self.fixedTimestep.physicsDelta)
+  renderer.gameState.update(inputs, renderer.fixedTimestep.physicsDelta)
 
-proc render(self: GameRenderer) =
+func render(renderer: GameRenderer) =
   ClearBackground(BLACK)
 
-  #self.drawPlayer()
-
-  for polygon in self.gameState.collisionGroup.colliders:
-    self.drawPolygon(polygon)
+  for collider in renderer.gameState.colliders:
+    renderer.drawCollider(collider)
 
   DrawFPS(10, 10)
 
-proc run*(self: var GameRenderer) =
-  InitWindow(self.windowWidth, self.windowHeight, self.windowTitle)
-  SetTargetFPS(self.displayFps.int32)
+proc run*(renderer: var GameRenderer) =
+  InitWindow(renderer.windowWidth, renderer.windowHeight, renderer.windowTitle)
+  SetTargetFPS(renderer.displayFps.int32)
 
   while not WindowShouldClose():
-    self.fixedTimestep.update:
-      self.updateGameState()
+    renderer.fixedTimestep.update:
+      renderer.updateGameState()
 
     BeginDrawing()
-    self.render()
+    renderer.render()
     EndDrawing()
 
   CloseWindow()

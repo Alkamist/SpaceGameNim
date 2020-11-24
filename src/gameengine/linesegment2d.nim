@@ -1,7 +1,7 @@
 import options
 import math
 
-import vector2d
+import ./vector2d
 export vector2d
 
 
@@ -31,19 +31,19 @@ template leftPoint*(segment: LineSegment2d): untyped =
 template rightPoint*(segment: LineSegment2d): untyped =
   segment.points[segment.rightPointIndex]
 
-func slope*(segment: LineSegment2d): float32 =
+func slope*(segment: LineSegment2d): float32 {.inline.} =
   let
     leftPoint = segment.leftPoint
     rightPoint = segment.rightPoint
   (rightPoint.y - leftPoint.y) / (rightPoint.x - leftPoint.x)
 
-func length*(segment: LineSegment2d): float32 =
+func length*(segment: LineSegment2d): float32 {.inline.} =
   let
     pointA = segment.points[0]
     pointB = segment.points[1]
   sqrt(pow(pointB.x - pointA.x, 2.0) + pow(pointB.y - pointA.y, 2.0))
 
-func containsColinearPoint*(segment: LineSegment2d, point: Vector2d): bool =
+func containsColinearPoint*(segment: LineSegment2d, point: Vector2d): bool {.inline.} =
   point.x <= max(segment.points[0].x, segment.points[1].x) and
   point.x >= min(segment.points[0].x, segment.points[1].x) and
   point.y <= max(segment.points[0].y, segment.points[1].y) and

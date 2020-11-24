@@ -1,26 +1,13 @@
 import raylib/raylib
 export raylib
 
-import vmath
+import gameengine/vector2d
 
-{.push inline.}
 
-converter toVector2*(self: Vec2): Vector2 =
+converter toVector2*(self: Vector2d): Vector2 {.inline.} =
   result.x = self.x
   result.y = self.y
 
-converter toVec2*(self: Vector2): Vec2 =
+converter toVec2*(self: Vector2): Vector2d {.inline.} =
   result.x = self.x
   result.y = self.y
-
-converter toVector3*(self: Vec3): Vector3 =
-  result.x = self.x
-  result.y = self.y
-  result.z = self.z
-
-converter toVec3*(self: Vector3): Vec3 =
-  result.x = self.x
-  result.y = self.y
-  result.z = self.z
-
-{.pop.}

@@ -1,5 +1,6 @@
 import gamerenderer
 
+
 proc main =
   var renderer = initGameRenderer(
     windowTitle = "Game Window",
@@ -10,5 +11,6 @@ proc main =
   )
 
   renderer.run()
+
 
 main()
