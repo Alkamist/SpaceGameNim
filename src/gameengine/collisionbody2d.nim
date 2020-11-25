@@ -47,6 +47,8 @@ func initCollisionBody2d*(localPolygon = pentagon(),
   result.isOverlapped = isOverlapped
   result.updateWorldPolygon()
 
+#func pointIsInside(body: CollisionBody2d, point: Vector2d): bool {.inline.} =
+
 func overlapTest(body: CollisionBody2d, other: CollisionBody2d): bool {.inline.} =
   let
     bodySides = body.numberOfSides
@@ -67,6 +69,8 @@ func overlapTest(body: CollisionBody2d, other: CollisionBody2d): bool {.inline.}
   false
 
 func overlaps*(body: CollisionBody2d, other: CollisionBody2d): bool =
+  #if body.pointIsInside(other.position): return true
+  #if other.pointIsInside(body.position): return true
   if body.overlapTest(other): return true
   if other.overlapTest(body): return true
   false

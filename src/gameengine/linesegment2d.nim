@@ -86,22 +86,22 @@ func intersection*(a: LineSegment2d, b: LineSegment2d): Option[Vector2d] =
     ))
 
 
-proc testLineSegment2d =
-  var
-    a = initLineSegment2d(0.0, 0.0, 1.0, 1.0)
-    b = initLineSegment2d(0.0, 1.0, 1.0, 0.0)
-  assert(a.intersection(b) == some(initVector2d(0.5, 0.5)))
-
-  a = initLineSegment2d(0.0, 0.0, 1.0, 1.0)
-  b = initLineSegment2d(0.0, 0.0, 1.0, 1.0)
-  assert(a.intersection(b) == none(Vector2d))
-
-  a = initLineSegment2d(0.0, 0.0, 1.0, 1.0)
-  assert(a.slope == 1.0)
-
-  a = initLineSegment2d(0.0, 0.0, 0.0, 1.0)
-  assert(a.length == 1.0)
-
-
-when isMainModule:
-  testLineSegment2d()
+#proc testLineSegment2d =
+#  var
+#    a = initLineSegment2d(0.0, 0.0, 1.0, 1.0)
+#    b = initLineSegment2d(0.0, 1.0, 1.0, 0.0)
+#  assert(a.intersection(b) == some(initVector2d(0.5, 0.5)))
+#
+#  a = initLineSegment2d(0.0, 0.0, 1.0, 1.0)
+#  b = initLineSegment2d(0.0, 0.0, 1.0, 1.0)
+#  assert(a.intersection(b) == none(Vector2d))
+#
+#  a = initLineSegment2d(0.0, 0.0, 1.0, 1.0)
+#  assert(a.slope == 1.0)
+#
+#  a = initLineSegment2d(0.0, 0.0, 0.0, 1.0)
+#  assert(a.length == 1.0)
+#
+#
+#when isMainModule:
+#  testLineSegment2d()

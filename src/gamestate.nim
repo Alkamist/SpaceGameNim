@@ -8,8 +8,8 @@ type
     controls*: GameControls
     colliders*: seq[CollisionBody2d]
 
-proc initGameState*(): GameState =
-  result.colliders.add(initCollisionBody2d())
+func initGameState*(): GameState =
+  result.colliders.add(initCollisionBody2d(scale = 0.15))
   result.colliders.add(initCollisionBody2d())
   for i in 0..<result.colliders.len:
     result.colliders[i].updateWorldPolygon()
