@@ -3,6 +3,9 @@ import options
 
 
 type
+  Degrees* = distinct float32
+  Radians* = distinct float32
+
   Intersection2dKind* {.pure.} = enum
     Point
     Line
@@ -31,11 +34,11 @@ type
 
   Line2d* = object
     position*: Vector2d
-    angle*: float32
+    angle*: Radians
 
   Ray2d* = object
     position*: Vector2d
-    angle*: float32
+    angle*: Radians
 
   LineSegment2d* = object
     points*: array[0..1, Vector2d]
@@ -57,19 +60,36 @@ type
 # ================== Utility ==================
 
 const
-  angleRight = 0.0
-  angleUp = 0.5 * PI
-  angleLeft = PI
-  angleDown = 1.5 * PI
+  angleRight = Radians(0.0)
+  angleUp = Radians(0.5 * PI)
+  angleLeft = Radians(PI)
+  angleDown = Radians(1.5 * PI)
 
-proc fixAngle*(angle: float32): float32 =
+converter toFloat32*(degrees: var Degrees): var float32 =
+  return degrees.float32
+
+converter toFloat32*(degrees: Degrees): float32 =
+  degrees.float32
+
+converter toFloat32*(radians: var Radians): var float32 =
+  return radians.float32
+
+converter toFloat32*(radians: Radians): float32 =
+  radians.float32
+
+converter toRadians(degrees: Degrees): Radians =
+  Radians(degrees * float32(PI / 180.0))
+
+converter toDegrees(radians: Radians): Degrees =
+  Degrees(radians * float32(180.0 / PI))
+
+proc fixAngle*(angle: Radians): Radians =
   var angle = angle
   while angle > PI:
-    angle -= PI * 2
+    angle -= PI * 2.0
   while angle < -PI:
-    angle += PI * 2
+    angle += PI * 2.0
   angle
-
 
 # ================== Vector2d ==================
 
@@ -147,17 +167,16 @@ proc `[]=`*(a: var Vector2d, i: int, b: float32) =
   if i == 0: a.x = b
   elif i == 1: a.y = b
 
-proc angle*(a: Vector2d): float32 =
-  arctan2(a.y, a.x)
+proc angle*(a: Vector2d): Radians =
+  Radians(arctan2(a.y, a.x))
 
-proc angleBetween*(a, b: Vector2d): float32 =
-  fixAngle(arctan2(a.y - b.y, a.x - b.x))
-
+proc angleBetween*(a, b: Vector2d): Radians =
+  fixAngle(Radians(arctan2(a.y - b.y, a.x - b.x)))
 
 # ================== Line2d ==================
 
 proc initLine2d*(position = initVector2d(0.0, 0.0),
-                 angle = 0'f32): Line2d =
+                 angle = Radians(0.0)): Line2d =
   result.position = position
   result.angle = angle
 
@@ -225,11 +244,10 @@ proc intersection*(a, b: Line2d): Option[Intersection2d] =
         point: initVector2d(x, y),
       ))
 
-
 # ================== Ray2d ==================
 
 proc initRay2d*(position = initVector2d(0.0, 0.0),
-                angle = 0'f32): Ray2d =
+                angle = Radians(0.0)): Ray2d =
   result.position = position
   result.angle = angle
 
@@ -262,21 +280,20 @@ proc intersection*(ray: Ray2d, line: Line2d): Option[Intersection2d] =
     else:
       discard
 
-# proc intersection*(line: Line2d, ray: Ray2d): Option[Vector2d] =
-#   ray.intersection(line)
+proc intersection*(line: Line2d, ray: Ray2d): Option[Intersection2d] =
+  ray.intersection(line)
 
-# proc intersects*(ray: Ray2d, line: Line2d): bool =
-#   ray.intersection(line).isSome
+proc intersects*(ray: Ray2d, line: Line2d): bool =
+  ray.intersection(line).isSome
 
-# proc intersects*(line: Line2d, ray: Ray2d): bool =
-#   ray.intersects(line)
-
+proc intersects*(line: Line2d, ray: Ray2d): bool =
+  ray.intersects(line)
 
 # ================== LineSegment2d ==================
 
-# proc initLineSegment2d*(pointA = initVector2d(0.0, 0.0),
-#                         pointB = initVector2d(0.0, 0.0)): LineSegment2d =
-#   result.points = [pointA, pointB]
+# proc initLineSegment2d*(a = initVector2d(0.0, 0.0),
+#                         b = initVector2d(0.0, 0.0)): LineSegment2d =
+#   result.points = [a, b]
 
 # proc initLineSegment2d*(x0 = 0'f32,
 #                         y0 = 0'f32,
@@ -311,12 +328,6 @@ proc intersection*(ray: Ray2d, line: Line2d): Option[Intersection2d] =
 #     pointA = segment.points[0]
 #     pointB = segment.points[1]
 #   sqrt(pow(pointB.x - pointA.x, 2.0) + pow(pointB.y - pointA.y, 2.0))
-
-# proc toLine2d*(segment: LineSegment2d): Line2d =
-#   let
-#     slope = segment.slope
-#     yIntercept = segment.points[0].y - slope * segment.points[0].x
-#   initLine2d(slope, yIntercept)
 
 # proc containsColinearPoint*(segment: LineSegment2d, point: Vector2d): bool =
 #   point.x <= max(segment.points[0].x, segment.points[1].x) and
@@ -370,38 +381,37 @@ proc intersection*(ray: Ray2d, line: Line2d): Option[Intersection2d] =
 # proc intersects*(ray: Ray2d, segment: LineSegment2d): bool =
 #   segment.intersects(ray)
 
-# proc intersects*(segment, otherSegment: LineSegment2d): bool =
+# proc intersects*(a, b: LineSegment2d): bool =
 #   let
-#     orientation0 = orientation(segment.points[0], segment.points[1], otherSegment.points[0])
-#     orientation1 = orientation(segment.points[0], segment.points[1], otherSegment.points[1])
-#     orientation2 = orientation(otherSegment.points[0], otherSegment.points[1], segment.points[0])
-#     orientation3 = orientation(otherSegment.points[0], otherSegment.points[1], segment.points[1])
+#     orientation0 = orientation(a.points[0], a.points[1], b.points[0])
+#     orientation1 = orientation(a.points[0], a.points[1], b.points[1])
+#     orientation2 = orientation(b.points[0], b.points[1], a.points[0])
+#     orientation3 = orientation(b.points[0], b.points[1], a.points[1])
 
 #   if orientation0 != orientation1 and orientation2 != orientation3: true
-#   elif orientation0 == Vector2dOrientation.Colinear and segment.containsColinearPoint(otherSegment.points[0]): true
-#   elif orientation1 == Vector2dOrientation.Colinear and segment.containsColinearPoint(otherSegment.points[1]): true
-#   elif orientation2 == Vector2dOrientation.Colinear and otherSegment.containsColinearPoint(segment.points[0]): true
-#   elif orientation3 == Vector2dOrientation.Colinear and otherSegment.containsColinearPoint(segment.points[1]): true
+#   elif orientation0 == Vector2dOrientation.Colinear and a.containsColinearPoint(b.points[0]): true
+#   elif orientation1 == Vector2dOrientation.Colinear and a.containsColinearPoint(b.points[1]): true
+#   elif orientation2 == Vector2dOrientation.Colinear and b.containsColinearPoint(a.points[0]): true
+#   elif orientation3 == Vector2dOrientation.Colinear and b.containsColinearPoint(a.points[1]): true
 #   else: false
 
-# proc intersection*(segment, otherSegment: LineSegment2d): Option[Vector2d] =
-#   if segment.intersects(otherSegment):
+# proc intersection*(a, b: LineSegment2d): Option[Vector2d] =
+#   if a.intersects(b):
 #     let
-#       deltaAX = segment.points[1].x - segment.points[0].x
-#       deltaAY = segment.points[1].y - segment.points[0].y
-#       deltaBX = otherSegment.points[1].x - otherSegment.points[0].x
-#       deltaBY = otherSegment.points[1].y - otherSegment.points[0].y
-#       deltaABX = segment.points[0].x - otherSegment.points[0].x
-#       deltaABY = segment.points[0].y - otherSegment.points[0].y
+#       deltaAX = a.points[1].x - a.points[0].x
+#       deltaAY = a.points[1].y - a.points[0].y
+#       deltaBX = b.points[1].x - b.points[0].x
+#       deltaBY = b.points[1].y - b.points[0].y
+#       deltaABX = a.points[0].x - b.points[0].x
+#       deltaABY = a.points[0].y - b.points[0].y
 #       denominator = -deltaBX * deltaAY + deltaAX * deltaBY
 #       numerator = deltaBX * deltaABY - deltaBY * deltaABX
 #       t = numerator / denominator
 
 #     return some(Vector2d(
-#       x: segment.points[0].x + (t * deltaAX),
-#       y: segment.points[0].y + (t * deltaAY),
+#       x: a.points[0].x + (t * deltaAX),
+#       y: a.points[0].y + (t * deltaAY),
 #     ))
-
 
 # ================== Polygon2d ==================
 
@@ -420,7 +430,6 @@ proc intersection*(ray: Ray2d, line: Line2d): Option[Intersection2d] =
 
 # proc `[]=`*(polygon: var Polygon2d, i: int, v: Vector2d) =
 #   polygon.points[i] = v
-
 
 # ================== CollisionBody2d ==================
 
@@ -501,7 +510,6 @@ proc intersection*(ray: Ray2d, line: Line2d): Option[Intersection2d] =
 
 {.pop.}
 
-
 # ================== Test ==================
 
 proc printIntersection2d(possibleIntersection: Option[Intersection2d]) =
@@ -512,12 +520,17 @@ proc printIntersection2d(possibleIntersection: Option[Intersection2d]) =
 
     case kind:
     of Intersection2dKind.Point:
+      echo "Point"
       echo intersection.point
     of Intersection2dKind.Line:
+      echo "Line"
       echo intersection.line
     of Intersection2dKind.Ray:
+      echo "Ray"
       echo intersection.ray
+      echo intersection.ray.angle.toDegrees.float32
     of Intersection2dKind.LineSegment:
+      echo "LineSegment"
       echo intersection.segment
 
   else:
@@ -525,7 +538,7 @@ proc printIntersection2d(possibleIntersection: Option[Intersection2d]) =
 
 when isMainModule:
   let
-    a = initRay2d(initVector2d(1.0, 1.0), -0.26 * PI)
-    b = initLine2d(initVector2d(0.0, 1.0), -0.25 * PI)
+    a = initRay2d(initVector2d(0.0, 0.0), Degrees(45.0))
+    b = initLine2d(initVector2d(0.0, 0.0), Degrees(45.0))
 
   printIntersection2d(a.intersection(b))
