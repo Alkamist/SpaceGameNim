@@ -13,7 +13,7 @@ func initAnalogAxis*(deadZone: float32): AnalogAxis =
   result.wasActive = false
   result.highStateWasFirst = true
 
-func direction*(axis: AnalogAxis): float32 {.inline.} =
+func direction*(axis: AnalogAxis): float32 =
   if axis.value > 0.0:
     1.0
   elif axis.value < 0.0:
@@ -21,17 +21,17 @@ func direction*(axis: AnalogAxis): float32 {.inline.} =
   else:
     0.0
 
-func justCrossedCenter*(axis: AnalogAxis): bool {.inline.} =
+func justCrossedCenter*(axis: AnalogAxis): bool =
   (axis.value < 0.0 and axis.previousValue >= 0.0) or
   (axis.value > 0.0 and axis.previousValue <= 0.0)
 
-func isActive*(axis: AnalogAxis): bool {.inline.} =
+func isActive*(axis: AnalogAxis): bool =
   axis.value.abs >= axis.deadZone
 
-func justActivated*(axis: AnalogAxis): bool {.inline.} =
+func justActivated*(axis: AnalogAxis): bool =
   axis.justCrossedCenter or axis.isActive and not axis.wasActive
 
-func justDeactivated*(axis: AnalogAxis): bool {.inline.} =
+func justDeactivated*(axis: AnalogAxis): bool =
   axis.wasActive and not axis.isActive
 
 proc setValueFromStates*(axis: var AnalogAxis, lowState: bool, highState: bool) =
@@ -49,6 +49,6 @@ proc setValueFromStates*(axis: var AnalogAxis, lowState: bool, highState: bool) 
   else:
       axis.value = 0.0
 
-proc update*(axis: var AnalogAxis) {.inline.} =
+proc update*(axis: var AnalogAxis) =
   axis.previousValue = axis.value
   axis.wasActive = axis.isActive
