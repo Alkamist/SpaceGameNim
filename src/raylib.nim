@@ -1,7 +1,7 @@
 import raylib/raylib
 export raylib
 
-import gameengine/vector2d
+import gameengine/math2d
 
 
 converter toVector2*(self: Vector2d): Vector2 {.inline.} =

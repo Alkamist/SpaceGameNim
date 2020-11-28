@@ -1,6 +1,6 @@
 import gameinputs
 export gameinputs
-import gameengine/collisionBody2d
+import gameengine/math2d
 
 
 type
@@ -9,7 +9,7 @@ type
     colliders*: seq[CollisionBody2d]
 
 func initGameState*(): GameState =
-  result.colliders.add(initCollisionBody2d(scale = 0.15))
+  result.colliders.add(initCollisionBody2d(scale = 0.6))
   result.colliders.add(initCollisionBody2d())
   for i in 0..<result.colliders.len:
     result.colliders[i].updateWorldPolygon()

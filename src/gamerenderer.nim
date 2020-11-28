@@ -1,8 +1,7 @@
 import raylib
 import gamestate
 import gameengine/fixedtimestep
-import gameengine/vector2d
-import gameengine/collisionBody2d
+import gameengine/math2d
 
 
 type
@@ -39,8 +38,8 @@ func drawCollider(renderer: GameRenderer, body: CollisionBody2d) =
   if numSides > 2:
     for i in 0..<numSides:
       let
-        startPosition = renderer.toScreenPosition(body.worldPolygon[i])
-        endPosition = renderer.toScreenPosition(body.worldPolygon[(i + 1) mod numSides])
+        startPosition = renderer.toScreenPosition(body.worldPolygon.points[i])
+        endPosition = renderer.toScreenPosition(body.worldPolygon.points[(i + 1) mod numSides])
       DrawLine(startPosition.x.int32,
                startPosition.y.int32,
                endPosition.x.int32,
