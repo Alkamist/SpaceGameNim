@@ -251,12 +251,12 @@ proc length*(segment: LineSegment2d): float32 =
 proc numberOfSides*(polygon: Polygon2d): int =
   polygon.points.len
 
-proc pentagon*: Polygon2d =
-  result.points.setLen(5)
+proc initPolygon2d*(numberOfSides: int): Polygon2d =
+  result.points.setLen(numberOfSides)
 
-  let theta = PI * 2.0 / 5.0
+  let theta = PI * 2.0 / numberOfSides.float32
 
-  for i in 0..<5:
+  for i in 0..<numberOfSides:
     result.points[i] = initVector2d(x = cos(theta * i.float32),
                                     y = sin(theta * i.float32))
 
@@ -319,12 +319,12 @@ proc updateWorldPolygon*(body: var CollisionBody2d) =
       y = body.scale * (localPoint.x * sinRot + localPoint.y * cosRot) + body.position.y
     body.worldPolygon.points[i] = initVector2d(x, y)
 
-proc initCollisionBody2d*(localPolygon = pentagon(),
+proc initCollisionBody2d*(polygon = initPolygon2d(5),
                           position = initVector2d(0.0, 0.0),
                           rotation = 0'f32,
                           scale = 1'f32): CollisionBody2d =
-  result.localPolygon = localPolygon
-  result.worldPolygon = localPolygon
+  result.localPolygon = polygon
+  result.worldPolygon = polygon
   result.position = position
   result.rotation = rotation
   result.scale = scale

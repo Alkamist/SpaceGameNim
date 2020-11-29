@@ -65,6 +65,14 @@ proc render(renderer: GameRenderer) =
 
   renderer.drawCollider(renderer.gameState.player)
 
+  let normalPosition = renderer.toScreenPosition(renderer.gameState.player.position)
+  var normalEnd = renderer.toScreenPosition(renderer.gameState.player.position + renderer.gameState.collisionNormal)
+  DrawLine(normalPosition.x.int32,
+           normalPosition.y.int32,
+           normalEnd.x.int32,
+           normalEnd.y.int32,
+           RED)
+
   #DrawFPS(10, 10)
 
 proc run*(renderer: var GameRenderer) =
