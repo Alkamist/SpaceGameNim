@@ -252,11 +252,14 @@ proc numberOfSides*(polygon: Polygon2d): int =
   polygon.points.len
 
 proc pentagon*: Polygon2d =
+  result.points.setLen(5)
+
   let theta = PI * 2.0 / 5.0
+
   for i in 0..<5:
-    let point = initVector2d(x = cos(theta * i.float32),
-                             y = sin(theta * i.float32))
-    result.points.add(point)
+    result.points[i] = initVector2d(x = cos(theta * i.float32),
+                                    y = sin(theta * i.float32))
+
   result.center = initVector2d(0.0, 0.0)
 
 proc axisExtremes(polygon: Polygon2d, axis: Vector2d): (float32, float32) =

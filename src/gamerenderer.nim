@@ -15,7 +15,7 @@ type
     cameraZoom: float32
     fixedTimestep*: FixedTimestep
 
-func initGameRenderer*(windowTitle: cstring,
+proc initGameRenderer*(windowTitle: cstring,
                        windowWidth: int32,
                        windowHeight: int32,
                        displayFps: float32,
@@ -29,11 +29,11 @@ func initGameRenderer*(windowTitle: cstring,
   result.cameraZoom = 64.0
   result.fixedTimestep = initFixedTimestep(physicsFps)
 
-func toScreenPosition(renderer: GameRenderer, position: Vector2d): Vector2d =
+proc toScreenPosition(renderer: GameRenderer, position: Vector2d): Vector2d =
   result.x = renderer.windowWidth.float32 * 0.5 + position.x * renderer.cameraZoom
   result.y = renderer.windowHeight.float32 * 0.5 - position.y * renderer.cameraZoom
 
-func drawCollider(renderer: GameRenderer, body: CollisionBody2d) =
+proc drawCollider(renderer: GameRenderer, body: CollisionBody2d) =
   let numSides = body.numberOfSides
   if numSides > 2:
     for i in 0..<numSides:
@@ -57,7 +57,7 @@ proc updateGameState(renderer: var GameRenderer) =
 
   renderer.gameState.update(inputs, renderer.fixedTimestep.physicsDelta)
 
-func render(renderer: GameRenderer) =
+proc render(renderer: GameRenderer) =
   ClearBackground(BLACK)
 
   for collider in renderer.gameState.staticColliders:
@@ -65,7 +65,7 @@ func render(renderer: GameRenderer) =
 
   renderer.drawCollider(renderer.gameState.player)
 
-  DrawFPS(10, 10)
+  #DrawFPS(10, 10)
 
 proc run*(renderer: var GameRenderer) =
   InitWindow(renderer.windowWidth, renderer.windowHeight, renderer.windowTitle)

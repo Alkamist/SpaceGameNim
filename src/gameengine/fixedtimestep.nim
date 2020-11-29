@@ -11,7 +11,7 @@ type
     currentTime: MonoTime
     previousTime: MonoTime
 
-func initFixedTimestep*(physicsFps: float32): FixedTimestep =
+proc initFixedTimestep*(physicsFps: float32): FixedTimestep =
   result.interpolation = 0.0
   result.displayDelta = 0.0
   result.physicsDelta = 1.0 / physicsFps

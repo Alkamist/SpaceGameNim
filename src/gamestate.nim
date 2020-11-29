@@ -1,5 +1,5 @@
 import math
-import times
+import std/times
 import gameinputs
 export gameinputs
 import gameengine/math2d
@@ -12,9 +12,9 @@ type
     player*: CollisionBody2d
     staticColliders*: array[0..1, CollisionBody2d]
 
-func initGameState*(): GameState =
+proc initGameState*(): GameState =
   result.time = initDuration()
-  result.player = initCollisionBody2d()
+  result.player = initCollisionBody2d(position = initVector2d(0.0, 1.5))
   result.staticColliders = [
     initCollisionBody2d(position = initVector2d(-1.0, 0.0)),
     initCollisionBody2d(position = initVector2d(1.0, 0.0)),
