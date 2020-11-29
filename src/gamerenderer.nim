@@ -44,7 +44,7 @@ func drawCollider(renderer: GameRenderer, body: CollisionBody2d) =
                startPosition.y.int32,
                endPosition.x.int32,
                endPosition.y.int32,
-               if body.isOverlapped: RED else: GREEN)
+               GREEN)
 
 proc updateGameState(renderer: var GameRenderer) =
   renderer.previousGameState = renderer.gameState
@@ -60,8 +60,10 @@ proc updateGameState(renderer: var GameRenderer) =
 func render(renderer: GameRenderer) =
   ClearBackground(BLACK)
 
-  for collider in renderer.gameState.colliders:
+  for collider in renderer.gameState.staticColliders:
     renderer.drawCollider(collider)
+
+  renderer.drawCollider(renderer.gameState.player)
 
   DrawFPS(10, 10)
 

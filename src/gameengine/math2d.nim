@@ -31,7 +31,6 @@ type
     position*: Vector2d
     rotation*: float32
     scale*: float32
-    isOverlapped*: bool
 
 
 {.push inline.}
@@ -270,26 +269,6 @@ proc axisExtremes(polygon: Polygon2d, axis: Vector2d): (float32, float32) =
     maximum = max(maximum, axisDot)
   (minimum.float32, maximum.float32)
 
-# proc overlapTest(polygonA, polygonB: Polygon2d): bool =
-#   let numSides = polygonA.numberOfSides
-
-#   for i in 0..<numSides:
-#     let
-#       pointA = polygonA.points[i]
-#       pointB = polygonA.points[(i + 1) mod numSides]
-#       projectionAxis = initVector2d(pointA.y - pointB.y,
-#                                     pointB.x - pointA.x).normalized
-
-#     let (minimumA, maximumA) = axisExtremes(polygonA, projectionAxis)
-#     let (minimumB, maximumB) = axisExtremes(polygonB, projectionAxis)
-
-#     overlap = min(overlap, min(maximumA, maximumB) - max(minimumA, minimumB))
-
-#     if not (maximumB >= minimumA and maximumA >= minimumB):
-#       return false
-
-#   true
-
 template overlapTest(polygonA, polygonB: Polygon2d): untyped =
   let numSides = polygonA.numberOfSides
 
@@ -325,9 +304,7 @@ proc overlap*(polygonA, polygonB: Polygon2d): Option[Vector2d] =
 proc numberOfSides*(body: CollisionBody2d): int =
   body.localPolygon.numberOfSides
 
-proc updateWorldPolygon*(body: var CollisionBody2d,
-                         origin = initVector2d(0.0, 0.0),
-                         originScale = 1'f32) =
+proc updateWorldPolygon*(body: var CollisionBody2d) =
   let numSides = body.numberOfSides
   body.worldPolygon.center = body.position
   for i in 0..<numSides:
@@ -335,45 +312,29 @@ proc updateWorldPolygon*(body: var CollisionBody2d,
       localPoint = body.localPolygon.points[i]
       cosRot = cos(body.rotation)
       sinRot = sin(body.rotation)
-      x = (body.scale / originScale) * (localPoint.x * cosRot - localPoint.y * sinRot) +
-        (body.position.x - origin.x)
-      y = (body.scale / originScale) * (localPoint.x * sinRot + localPoint.y * cosRot) +
-        (body.position.y - origin.y)
+      x = body.scale * (localPoint.x * cosRot - localPoint.y * sinRot) + body.position.x
+      y = body.scale * (localPoint.x * sinRot + localPoint.y * cosRot) + body.position.y
     body.worldPolygon.points[i] = initVector2d(x, y)
 
 proc initCollisionBody2d*(localPolygon = pentagon(),
                           position = initVector2d(0.0, 0.0),
                           rotation = 0'f32,
-                          scale = 1'f32,
-                          isOverlapped = false): CollisionBody2d =
+                          scale = 1'f32): CollisionBody2d =
   result.localPolygon = localPolygon
   result.worldPolygon = localPolygon
   result.position = position
   result.rotation = rotation
   result.scale = scale
-  result.isOverlapped = isOverlapped
   result.updateWorldPolygon()
 
 proc overlap*(bodyA, bodyB: CollisionBody2d): Option[Vector2d] =
   overlap(bodyA.worldPolygon, bodyB.worldPolygon)
 
-proc updateOverlaps*(bodies: var seq[CollisionBody2d]) =
-  let numColliders = bodies.len
-
-  for i in 0..<numColliders:
-    bodies[i].isOverlapped = false
-
-  for i in 0..<numColliders:
-    for j in i + 1..<numColliders:
-      let possibleOverlap = overlap(bodies[i], bodies[j])
-
-      #let overlapOccurs = possibleOverlap.isSome
-      #bodies[i].isOverlapped = bodies[i].isOverlapped or overlapOccurs
-      #bodies[j].isOverlapped = bodies[j].isOverlapped or overlapOccurs
-
-      if possibleOverlap.isSome:
-        let overlap = possibleOverlap.get()
-        bodies[i].position += overlap
-        bodies[i].updateWorldPolygon()
+proc resolveStaticCollisions*(body: var CollisionBody2d, staticColliders: openArray[CollisionBody2d]) =
+  for collider in staticColliders:
+    let possibleOverlap = overlap(body, collider)
+    if possibleOverlap.isSome:
+      body.position += possibleOverlap.get()
+      body.updateWorldPolygon()
 
 {.pop.}

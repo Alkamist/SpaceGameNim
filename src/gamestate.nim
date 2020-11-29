@@ -1,3 +1,5 @@
+import math
+import times
 import gameinputs
 export gameinputs
 import gameengine/math2d
@@ -5,23 +7,32 @@ import gameengine/math2d
 
 type
   GameState* = object
+    time: Duration
     controls*: GameControls
-    colliders*: seq[CollisionBody2d]
+    player*: CollisionBody2d
+    staticColliders*: array[0..1, CollisionBody2d]
 
 func initGameState*(): GameState =
-  result.colliders.add(initCollisionBody2d(scale = 0.6))
-  result.colliders.add(initCollisionBody2d(position = initVector2d(-1.0, 0.0)))
-  result.colliders.add(initCollisionBody2d(position = initVector2d(1.0, 0.0)))
-  for i in 0..<result.colliders.len:
-    result.colliders[i].updateWorldPolygon()
+  result.time = initDuration()
+  result.player = initCollisionBody2d()
+  result.staticColliders = [
+    initCollisionBody2d(position = initVector2d(-1.0, 0.0)),
+    initCollisionBody2d(position = initVector2d(1.0, 0.0)),
+  ]
+  for i in 0..<result.staticColliders.len:
+    result.staticColliders[i].updateWorldPolygon()
 
 proc update*(state: var GameState, inputs: GameInputs, delta: float32) =
+  state.time += initDuration(nanoseconds = int64(delta * 1.0e9))
+
   state.controls.update()
   state.controls.applyInputs(inputs)
 
-  state.colliders[0].position.x += 3.0 * state.controls.xAxis.value * delta
-  state.colliders[0].position.y += 3.0 * state.controls.yAxis.value * delta
-  state.colliders[0].rotation += delta
-  state.colliders[0].updateWorldPolygon()
+  state.player.position.x += 3.0 * state.controls.xAxis.value * delta
+  state.player.position.y += 3.0 * state.controls.yAxis.value * delta
+  state.player.rotation += delta
+  state.player.scale = 0.6 + sin(state.time.inNanoseconds.float64 * 2.0 / 1.0e9) * 0.5
+  state.player.updateWorldPolygon()
 
-  state.colliders.updateOverlaps()
+  for i in 0..3:
+    state.player.resolveStaticCollisions(state.staticColliders)
