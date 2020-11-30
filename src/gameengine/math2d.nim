@@ -302,47 +302,68 @@ proc initPolygon2d*(numberOfSides: int): Polygon2d =
 
   result.center = initVector2d(0.0, 0.0)
 
-template collisionTest(polygonA, polygonB: Polygon2d, aIsPerspective: bool): untyped =
-  let
-    signMultiplier = if aIsPerspective: 1.0 else: -1.0
-    bodySides = polygonA.numberOfSides
-    otherSides = polygonB.numberOfSides
+proc axisExtremes(polygon: Polygon2d, axis: Vector2d): (float32, float32) =
+  var
+    minimum = Inf
+    maximum = NegInf
+  for point in polygon.points:
+    let axisDot = dot(point, axis)
+    minimum = min(minimum, axisDot)
+    maximum = max(maximum, axisDot)
+  (minimum.float32, maximum.float32)
 
-  for i in 0..<bodySides:
+template collisionTest(polygonA, polygonB: Polygon2d): untyped =
+  for i in 0..<polygonA.numberOfSides:
+    let
+      pointA = polygonA.points[i]
+      pointB = polygonA.points[(i + 1) mod polygonA.numberOfSides]
+      projectionAxis = initVector2d(pointA.y - pointB.y,
+                                    pointB.x - pointA.x).normalized
+
+    let (minimumA, maximumA) = axisExtremes(polygonA, projectionAxis)
+    let (minimumB, maximumB) = axisExtremes(polygonB, projectionAxis)
+
+    overlap = min(overlap, min(maximumA, maximumB) - max(minimumA, minimumB))
+
+    if not (maximumB >= minimumA and maximumA >= minimumB):
+      return none(Collision2d)
+
+template determineNormal(polygonA, polygonB: Polygon2d; aIsPerspective: bool): untyped =
+  for i in 0..<polygonA.numberOfSides:
     let diagonalLine = initLineSegment2d(polygonA.center, polygonA.points[i])
 
-    for j in 0..<otherSides:
+    for j in 0..<polygonB.numberOfSides:
       let
         edgePointA = polygonB.points[j]
-        edgePointB = polygonB.points[(j + 1) mod otherSides]
+        edgePointB = polygonB.points[(j + 1) mod polygonB.numberOfSides]
         edgeLine = initLineSegment2d(edgePointA, edgePointB)
         possibleIntersection = intersection(diagonalLine, edgeLine)
 
       if possibleIntersection.isSome:
-        let
-          intersectionPosition = possibleIntersection.get()
-          collision = Collision2d(
-            position: intersectionPosition,
-            normal: edgeLine.normal * signMultiplier,
-            penetration: (polygonA.points[i] - intersectionPosition) * signMultiplier,
-          )
-
-        if result.isSome:
-          let
-            polygonCenter = if aIsPerspective: polygonA.center else: polygonB.center
-            closestCollision = result.get()
-            closestCollisionDistance = (closestCollision.position - polygonCenter).length
-            currentCollisionDistance = (collision.position - polygonCenter).length
-
-          if currentCollisionDistance < closestCollisionDistance:
-            result = some(collision)
-
+        collisionPosition = possibleIntersection.get()
+        if aIsPerspective:
+          collisionNormal = edgeLine.normal
         else:
-          result = some(collision)
+          collisionNormal = diagonalLine.direction
 
 proc collision*(polygonA, polygonB: Polygon2d): Option[Collision2d] =
-  collisionTest(polygonA, polygonB, true)
-  collisionTest(polygonB, polygonA, false)
+  var
+    overlap = Inf
+    collisionPosition: Vector2d
+    collisionNormal: Vector2d
+
+  collisionTest(polygonA, polygonB)
+  collisionTest(polygonB, polygonA)
+  determineNormal(polygonA, polygonB, true)
+  determineNormal(polygonB, polygonA, false)
+
+  let
+    x = polygonB.center.x - polygonA.center.x
+    y = polygonB.center.y - polygonA.center.y
+
+  some(Collision2d(position: collisionPosition,
+                   normal: collisionNormal,
+                   penetration: initVector2d(x, y).normalized * overlap))
 
 # ================== CollisionBody2d ==================
 

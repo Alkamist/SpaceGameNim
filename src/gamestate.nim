@@ -1,3 +1,4 @@
+import math
 import options
 import std/times
 import gameinputs
@@ -20,10 +21,10 @@ proc initGameState*(): GameState =
   result.staticColliders = [
     initCollisionBody2d(polygon = initPolygon2d(3),
                         position = initVector2d(-1.0, 0.0),
-                        rotation = Degrees(0.0),
+                        rotation = Degrees(20.0),
                         scale = 1.0),
     initCollisionBody2d(polygon = initPolygon2d(4),
-                        position = initVector2d(20.0, 0.0),
+                        position = initVector2d(1.0, 0.0),
                         rotation = Degrees(45.0)),
   ]
   result.collisionLine = initLineSegment2d(0.0, 0.0, 0.0, 0.0)
@@ -41,20 +42,22 @@ proc update*(state: var GameState, inputs: GameInputs, delta: float32) =
   #state.player.scale = 0.6 + sin(state.time.inNanoseconds.float64 * 2.0 / 1.0e9) * 0.5
   state.player.updateWorldPolygon()
 
-  state.collisionLine = initLineSegment2d(0.0, 0.0, 0.0, 0.0)
+  #state.collisionLine = initLineSegment2d(0.0, 0.0, 0.0, 0.0)
 
-  if state.controls.jump.isPressed:
-    for i in 0..3:
-      for collider in state.staticColliders:
-        let possibleCollision = collision(state.player, collider)
-        if possibleCollision.isSome:
-          let
-            collision = possibleCollision.get()
-            #correction = collision.normal * abs(collision.normal.dot(collision.penetration))
-            correction = -collision.penetration
-          state.player.position += correction
-          state.player.updateWorldPolygon()
-          #state.collisionLine = initLineSegment2d(collision.position, collision.position + correction)
+  for i in 0..3:
+    for collider in state.staticColliders:
+      let possibleCollision = collision(state.player, collider)
+      if possibleCollision.isSome:
+        let
+          collision = possibleCollision.get()
+          #correction = collision.normal * abs(collision.normal.dot(collision.penetration))
+
+        state.collisionLine = initLineSegment2d(collision.position, collision.position + collision.normal)
+
+        #if state.controls.jump.isPressed:
+        state.player.position -= collision.penetration
+        state.player.updateWorldPolygon()
+
 
   #for i in 0..3:
   #  state.player.resolveStaticCollisions(state.staticColliders)
