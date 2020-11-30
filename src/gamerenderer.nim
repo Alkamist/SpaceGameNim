@@ -65,8 +65,8 @@ proc render(renderer: GameRenderer) =
 
   renderer.drawCollider(renderer.gameState.player)
 
-  let normalPosition = renderer.toScreenPosition(renderer.gameState.player.position)
-  var normalEnd = renderer.toScreenPosition(renderer.gameState.player.position + renderer.gameState.collisionNormal)
+  let normalPosition = renderer.toScreenPosition(renderer.gameState.collisionLine.points[0])
+  var normalEnd = renderer.toScreenPosition(renderer.gameState.collisionLine.points[1])
   DrawLine(normalPosition.x.int32,
            normalPosition.y.int32,
            normalEnd.x.int32,

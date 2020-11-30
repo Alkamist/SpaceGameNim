@@ -25,6 +25,11 @@ type
     center*: Vector2d
     points*: seq[Vector2d]
 
+  Collision2d* = object
+    position*: Vector2d
+    normal*: Vector2d
+    penetration*: Vector2d
+
   CollisionBody2d* = object
     localPolygon*: Polygon2d
     worldPolygon*: Polygon2d
@@ -140,6 +145,13 @@ proc dot*(vectorA, vectorB: Vector2d): float32 =
 proc lerp*(vectorA, vectorB: Vector2d; value: float32): Vector2d =
   vectorA * (1.0 - value) + vectorB * value
 
+proc rotated*(vector: Vector2d, angle: Radians): Vector2d =
+  let
+    cosAngle = cos(angle)
+    sinAngle = sin(angle)
+  initVector2d(vector.x * cosAngle - vector.y * sinAngle,
+               vector.x * sinAngle + vector.y * cosAngle)
+
 proc `[]`*(vector: Vector2d, i: int): float32 =
   assert(i == 0 or i == 1)
   if i == 0: return vector.x
@@ -246,6 +258,34 @@ proc length*(segment: LineSegment2d): float32 =
     pointB = segment.points[1]
   sqrt(pow(pointB.x - pointA.x, 2.0) + pow(pointB.y - pointA.y, 2.0))
 
+proc direction*(segment: LineSegment2d): Vector2d =
+  (segment.points[1] - segment.points[0]).normalized
+
+proc normal*(segment: LineSegment2d): Vector2d =
+  segment.direction.rotated(Radians(-0.5 * PI))
+
+proc intersection*(segmentA, segmentB: LineSegment2d): Option[Vector2d] =
+  let
+    a0 = segmentA.points[0]
+    a1 = segmentA.points[1]
+    b0 = segmentB.points[0]
+    b1 = segmentB.points[1]
+    deltaAX = a1.x - a0.x
+    deltaAY = a1.y - a0.y
+    deltaBX = b1.x - b0.x
+    deltaBY = b1.y - b0.y
+    deltaA0B0X = a0.x - b0.x
+    deltaA0B0Y = a0.y - b0.y
+    h = deltaAX * deltaBY - deltaBX * deltaAY
+    t1 = (deltaBX * deltaA0B0Y - deltaBY * deltaA0B0X) / h
+    t2 = (deltaAX * deltaA0B0Y - deltaAY * deltaA0B0X) / h
+
+  if t1 >= 0.0 and t1 < 1.0 and t2 >= 0.0 and t2 < 1.0:
+    return some(Vector2d(
+      x: a0.x + (t1 * deltaAX),
+      y: a0.y + (t1 * deltaAY),
+    ))
+
 # ================== Polygon2d ==================
 
 proc numberOfSides*(polygon: Polygon2d): int =
@@ -262,45 +302,49 @@ proc initPolygon2d*(numberOfSides: int): Polygon2d =
 
   result.center = initVector2d(0.0, 0.0)
 
-proc axisExtremes(polygon: Polygon2d, axis: Vector2d): (float32, float32) =
-  var
-    minimum = Inf
-    maximum = NegInf
-  for point in polygon.points:
-    let axisDot = dot(point, axis)
-    minimum = min(minimum, axisDot)
-    maximum = max(maximum, axisDot)
-  (minimum.float32, maximum.float32)
-
-template overlapTest(polygonA, polygonB: Polygon2d): untyped =
-  let numSides = polygonA.numberOfSides
-
-  for i in 0..<numSides:
-    let
-      pointA = polygonA.points[i]
-      pointB = polygonA.points[(i + 1) mod numSides]
-      projectionAxis = initVector2d(pointA.y - pointB.y,
-                                    pointB.x - pointA.x).normalized
-
-    let (minimumA, maximumA) = axisExtremes(polygonA, projectionAxis)
-    let (minimumB, maximumB) = axisExtremes(polygonB, projectionAxis)
-
-    overlap = min(overlap, min(maximumA, maximumB) - max(minimumA, minimumB))
-
-    if not (maximumB >= minimumA and maximumA >= minimumB):
-      return none(Vector2d)
-
-proc overlap*(polygonA, polygonB: Polygon2d): Option[Vector2d] =
-  var overlap = Inf
-
-  overlapTest(polygonA, polygonB)
-  overlapTest(polygonB, polygonA)
-
+template collisionTest(polygonA, polygonB: Polygon2d, aIsPerspective: bool): untyped =
   let
-    x = polygonA.center.x - polygonB.center.x
-    y = polygonA.center.y - polygonB.center.y
+    signMultiplier = if aIsPerspective: 1.0 else: -1.0
+    bodySides = polygonA.numberOfSides
+    otherSides = polygonB.numberOfSides
 
-  some(initVector2d(x, y).normalized * overlap)
+  for i in 0..<bodySides:
+    let diagonalLine = initLineSegment2d(polygonA.center, polygonA.points[i])
+
+    for j in 0..<otherSides:
+      let
+        edgePointA = polygonB.points[j]
+        edgePointB = polygonB.points[(j + 1) mod otherSides]
+        edgeLine = initLineSegment2d(edgePointA, edgePointB)
+        possibleIntersection = intersection(diagonalLine, edgeLine)
+
+      if possibleIntersection.isSome:
+        let
+          intersectionPosition = possibleIntersection.get()
+          collision = Collision2d(
+            position: intersectionPosition,
+            normal: edgeLine.normal * signMultiplier,
+            penetration: (polygonA.points[i] - intersectionPosition) * signMultiplier,
+          )
+
+        if result.isSome:
+          let
+            closestCollision = result.get()
+            closestCollisionDistance = (closestCollision.position - polygonA.center).length
+            currentCollisionDistance = (collision.position - polygonA.center).length
+
+          if currentCollisionDistance < closestCollisionDistance:
+            result = some(collision)
+
+        else:
+          result = some(collision)
+
+  if result.isSome:
+    return
+
+proc collision*(polygonA, polygonB: Polygon2d): Option[Collision2d] =
+  collisionTest(polygonA, polygonB, true)
+  collisionTest(polygonB, polygonA, false)
 
 # ================== CollisionBody2d ==================
 
@@ -321,7 +365,7 @@ proc updateWorldPolygon*(body: var CollisionBody2d) =
 
 proc initCollisionBody2d*(polygon = initPolygon2d(5),
                           position = initVector2d(0.0, 0.0),
-                          rotation = 0'f32,
+                          rotation = Radians(0.0),
                           scale = 1'f32): CollisionBody2d =
   result.localPolygon = polygon
   result.worldPolygon = polygon
@@ -330,14 +374,13 @@ proc initCollisionBody2d*(polygon = initPolygon2d(5),
   result.scale = scale
   result.updateWorldPolygon()
 
-proc overlap*(bodyA, bodyB: CollisionBody2d): Option[Vector2d] =
-  overlap(bodyA.worldPolygon, bodyB.worldPolygon)
-
-proc resolveStaticCollisions*(body: var CollisionBody2d, staticColliders: openArray[CollisionBody2d]) =
-  for collider in staticColliders:
-    let possibleOverlap = overlap(body, collider)
-    if possibleOverlap.isSome:
-      body.position += possibleOverlap.get()
-      body.updateWorldPolygon()
+proc collision*(bodyA, bodyB: CollisionBody2d): Option[Collision2d] =
+  collision(bodyA.worldPolygon, bodyB.worldPolygon)
 
 {.pop.}
+
+if isMainModule:
+  let
+    a = initVector2d(1.0, 1.0).normalized
+
+  echo a.rotated(Radians(-0.25 * PI))
