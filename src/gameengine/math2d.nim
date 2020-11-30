@@ -329,18 +329,16 @@ template collisionTest(polygonA, polygonB: Polygon2d, aIsPerspective: bool): unt
 
         if result.isSome:
           let
+            polygonCenter = if aIsPerspective: polygonA.center else: polygonB.center
             closestCollision = result.get()
-            closestCollisionDistance = (closestCollision.position - polygonA.center).length
-            currentCollisionDistance = (collision.position - polygonA.center).length
+            closestCollisionDistance = (closestCollision.position - polygonCenter).length
+            currentCollisionDistance = (collision.position - polygonCenter).length
 
           if currentCollisionDistance < closestCollisionDistance:
             result = some(collision)
 
         else:
           result = some(collision)
-
-  if result.isSome:
-    return
 
 proc collision*(polygonA, polygonB: Polygon2d): Option[Collision2d] =
   collisionTest(polygonA, polygonB, true)
@@ -379,8 +377,8 @@ proc collision*(bodyA, bodyB: CollisionBody2d): Option[Collision2d] =
 
 {.pop.}
 
-if isMainModule:
-  let
-    a = initVector2d(1.0, 1.0).normalized
-
-  echo a.rotated(Radians(-0.25 * PI))
+#if isMainModule:
+#  let
+#    a = initLineSegment2d(0.0, 0.0, 0.0, 1.0)
+#
+#  echo a.normal

@@ -33,18 +33,32 @@ proc toScreenPosition(renderer: GameRenderer, position: Vector2d): Vector2d =
   result.x = renderer.windowWidth.float32 * 0.5 + position.x * renderer.cameraZoom
   result.y = renderer.windowHeight.float32 * 0.5 - position.y * renderer.cameraZoom
 
-proc drawCollider(renderer: GameRenderer, body: CollisionBody2d) =
+proc drawCollider(renderer: GameRenderer, body: CollisionBody2d, drawNormals: bool) =
   let numSides = body.numberOfSides
   if numSides > 2:
     for i in 0..<numSides:
       let
-        startPosition = renderer.toScreenPosition(body.worldPolygon.points[i])
-        endPosition = renderer.toScreenPosition(body.worldPolygon.points[(i + 1) mod numSides])
+        pointA = body.worldPolygon.points[i]
+        pointB = body.worldPolygon.points[(i + 1) mod numSides]
+        startPosition = renderer.toScreenPosition(pointA)
+        endPosition = renderer.toScreenPosition(pointB)
       DrawLine(startPosition.x.int32,
                startPosition.y.int32,
                endPosition.x.int32,
                endPosition.y.int32,
                GREEN)
+
+      if drawNormals:
+        let
+          segment = initLineSegment2d(pointA, pointB)
+          normalStartPoint = pointA.lerp(pointB, 0.5)
+          normalStart = renderer.toScreenPosition(normalStartPoint)
+          normalEnd = renderer.toScreenPosition(normalStartPoint + segment.normal)
+        DrawLine(normalStart.x.int32,
+                 normalStart.y.int32,
+                 normalEnd.x.int32,
+                 normalEnd.y.int32,
+                 RED)
 
 proc updateGameState(renderer: var GameRenderer) =
   renderer.previousGameState = renderer.gameState
@@ -61,9 +75,9 @@ proc render(renderer: GameRenderer) =
   ClearBackground(BLACK)
 
   for collider in renderer.gameState.staticColliders:
-    renderer.drawCollider(collider)
+    renderer.drawCollider(collider, false)
 
-  renderer.drawCollider(renderer.gameState.player)
+  renderer.drawCollider(renderer.gameState.player, false)
 
   let normalPosition = renderer.toScreenPosition(renderer.gameState.collisionLine.points[0])
   var normalEnd = renderer.toScreenPosition(renderer.gameState.collisionLine.points[1])

@@ -1,4 +1,3 @@
-import math
 import options
 import std/times
 import gameinputs
@@ -19,11 +18,12 @@ proc initGameState*(): GameState =
   result.player = initCollisionBody2d(polygon = initPolygon2d(3),
                                       position = initVector2d(0.0, 1.5))
   result.staticColliders = [
-    initCollisionBody2d(polygon = initPolygon2d(4),
+    initCollisionBody2d(polygon = initPolygon2d(3),
                         position = initVector2d(-1.0, 0.0),
-                        rotation = Degrees(0.0)),
+                        rotation = Degrees(0.0),
+                        scale = 1.0),
     initCollisionBody2d(polygon = initPolygon2d(4),
-                        position = initVector2d(1.0, 0.0),
+                        position = initVector2d(20.0, 0.0),
                         rotation = Degrees(45.0)),
   ]
   result.collisionLine = initLineSegment2d(0.0, 0.0, 0.0, 0.0)
@@ -37,22 +37,24 @@ proc update*(state: var GameState, inputs: GameInputs, delta: float32) =
 
   state.player.position.x += 3.0 * state.controls.xAxis.value * delta
   state.player.position.y += 3.0 * state.controls.yAxis.value * delta
-  state.player.rotation += delta
-  state.player.scale = 0.6 + sin(state.time.inNanoseconds.float64 * 2.0 / 1.0e9) * 0.5
+  #state.player.rotation += delta
+  #state.player.scale = 0.6 + sin(state.time.inNanoseconds.float64 * 2.0 / 1.0e9) * 0.5
   state.player.updateWorldPolygon()
 
   state.collisionLine = initLineSegment2d(0.0, 0.0, 0.0, 0.0)
 
-  #for i in 0..3:
-  for collider in state.staticColliders:
-    let possibleCollision = collision(state.player, collider)
-    if possibleCollision.isSome:
-      let
-        collision = possibleCollision.get()
-        correction = -collision.normal * collision.normal.dot(collision.penetration)
-      state.player.position += correction
-      state.player.updateWorldPolygon()
-      #state.collisionLine = initLineSegment2d(collision.position, collision.position + correction)
+  if state.controls.jump.isPressed:
+    for i in 0..3:
+      for collider in state.staticColliders:
+        let possibleCollision = collision(state.player, collider)
+        if possibleCollision.isSome:
+          let
+            collision = possibleCollision.get()
+            #correction = collision.normal * abs(collision.normal.dot(collision.penetration))
+            correction = -collision.penetration
+          state.player.position += correction
+          state.player.updateWorldPolygon()
+          #state.collisionLine = initLineSegment2d(collision.position, collision.position + correction)
 
   #for i in 0..3:
   #  state.player.resolveStaticCollisions(state.staticColliders)
